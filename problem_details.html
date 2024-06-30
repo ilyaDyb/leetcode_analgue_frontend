@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problem Details</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #181818;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .card {
+            background-color: #2a2a2a;
+            border: none;
+        }
+        .btn-custom {
+            background-color: #343a40;
+            color: white;
+        }
+        .btn-custom:hover {
+            background-color: #495057;
+        }
+        .nav-link {
+            color: white;
+        }
+        .nav-link:hover {
+            color: #ccc;
+        }
+        .table-dark th, .table-dark td {
+            color: #fff;
+        }
+        .problem-container {
+            display: flex;
+            flex-direction: row;
+            padding: 20px;
+        }
+        .problem-description, .problem-code {
+            flex: 1;
+            margin: 10px;
+        }
+        .code-editor {
+            flex: 1;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            height: 300px;
+        }
+        .testcase-container {
+            flex: 1;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .testcase {
+            display: flex;
+            justify-content: space-between;
+        }
+        .testcase-input,
+        .testcase-output {
+            width: 45%;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/mode-python.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="index.html">LeetCode Analogue</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Explore</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Problems</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contest</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Discuss</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Interview</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Store</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="problem-container">
+            <div class="problem-description">
+                <h2 id="problem-title">1. Two Sum</h2>
+                <p><strong>Difficulty:</strong> <span id="problem-difficulty">Easy</span></p>
+                <h3 id="problem-subtitle">string</h3>
+                <p id="problem-description">string</p>
+                <div id="test-cases">
+                    <h5>Test Cases</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Input</th>
+                                    <th>Expected Output</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testcase-table-body">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="problem-code">
+                <div class="code-editor" id="code-editor">
+                    <h5>Code</h5>
+                    <div id="editor" style="height: 300px; width: 100%;"></div>
+                </div>
+                <div class="testcase-container">
+                    <h5>Test Result</h5>
+                    <div class="testcase">
+                        <div class="testcase-input">
+                            <label>Input:</label>
+                            <p id="test-input">Example input</p>
+                        </div>
+                        <div class="testcase-output">
+                            <label>Output:</label>
+                            <p id="test-output">Example output</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-custom mt-3">Run</button>
+                    <button class="btn btn-custom mt-3">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const problemId = urlParams.get('id');
+            const token = localStorage.getItem('accessToken');
+
+            fetch(`http://127.0.0.1:8000/api/main/problem/${problemId}/`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('problem-title').innerText = `${data.id}. ${data.title}`;
+                document.getElementById('problem-subtitle').innerText = data.subtitle;
+                document.getElementById('problem-description').innerText = data.description;
+                document.getElementById('problem-difficulty').innerText = data.difficulty;
+            })
+            .catch(error => console.error('Error fetching problem details:', error));
+
+            fetch(`http://127.0.0.1:8000/api/main/problem/${problemId}/testcases/`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('testcase-table-body');
+                tbody.innerHTML = '';
+                data.forEach(testcase => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${testcase.input_data}</td>
+                        <td>${testcase.expected_output}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => console.error('Error fetching test cases:', error));
+
+            // Initialize Ace Editor
+            const editor = ace.edit("editor");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/python");
+        });
+    </script>
+</body>
+</html>
