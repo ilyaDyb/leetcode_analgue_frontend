@@ -62,9 +62,29 @@
             display: flex;
             justify-content: space-between;
         }
-        .testcase-input,
         .testcase-output {
-            width: 45%;
+            width: 85%;
+        }
+        .formatted-json {
+        white-space: pre-wrap;
+        background-color: #1e1e1e;
+        color: #dcdcdc;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin-top: 10px;
+        }
+        .json-bracket {
+            color: #a3a3a3;
+        }
+        .json-key {
+            color: #569cd6;
+        }
+        .json-value {
+            color: #ce9178;
+        }
+        .json-array {
+            display: inline;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
@@ -131,20 +151,14 @@
                     <h5>Code</h5>
                     <div id="editor" style="height: 300px; width: 100%;"></div>
                 </div>
-                <div class="testcase-container">
+                <<div class="testcase-container">
                     <h5>Test Result</h5>
-                    <div class="testcase">
-                        <div class="testcase-input">
-                            <label>Input:</label>
-                            <p id="test-input">Example input</p>
-                        </div>
-                        <div class="testcase-output">
-                            <label>Output:</label>
-                            <p id="test-output">Example output</p>
-                        </div>
+                    <div class="testcase-output">
+                        <label>Output:</label>
+                        <div id="test-output" class="formatted-json">Example output</div>
                     </div>
-                    <button class="btn btn-custom mt-3">Run</button>
-                    <button class="btn btn-custom mt-3">Submit</button>
+                    <button class="btn btn-custom mt-3" id="run-code">Run</button>
+                    <button class="btn btn-custom mt-3" id="submit-code">Submit</button>
                 </div>
             </div>
         </div>
@@ -154,52 +168,156 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const problemId = urlParams.get('id');
+        const urlParams = new URLSearchParams(window.location.search);
+        const problemId = urlParams.get('id');
+        const token = localStorage.getItem('accessToken');
+
+        // Fetch problem details
+        fetch(`http://localhost:8000/api/main/problem/${problemId}/`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('problem-title').innerText = `${data.id}. ${data.title}`;
+            document.getElementById('problem-subtitle').innerText = data.subtitle;
+            document.getElementById('problem-description').innerText = data.description;
+            document.getElementById('problem-difficulty').innerText = data.difficulty;
+        })
+        .catch(error => console.error('Error fetching problem details:', error));
+
+        // Fetch test cases
+        fetch(`http://localhost:8000/api/main/problem/${problemId}/testcases?not_full=true`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('testcase-table-body');
+            tbody.innerHTML = '';
+            data.forEach(testcase => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${testcase.input_data}</td>
+                    <td>${testcase.expected_output}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(error => console.error('Error fetching test cases:', error));
+
+        // Initialize Ace Editor
+        const editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/python");
+
+        function formatJSON(obj) {
+        const jsonStr = JSON.stringify(obj, null, 2);
+        return jsonStr.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/(\{|\}|\[|\])/g, match => `<span class="json-bracket">${match}</span>`)
+            .replace(/("[^"]*")(\s*:\s*)/g, (match, p1, p2) => `<span class="json-key">${p1}</span>${p2}`)
+            .replace(/:\s*(-?\d+\.?\d*e?[+-]?\d*|-?\d+\.?\d*|true|false|null)/g, match => `: <span class="json-value">${match.slice(2)}</span>`)
+            .replace(/(\[)([^[]*?)(\])/g, (match, p1, p2, p3) => `${p1}<span class="json-array">${p2}</span>${p3}`);
+        }
+
+        function fetchTaskStatus(taskId, intervalId, saveResult) {
             const token = localStorage.getItem('accessToken');
-
-            fetch(`http://127.0.0.1:8000/api/main/problem/${problemId}/`, {
+            fetch(`http://localhost:8000/api/interpreter/task-status/${taskId}/`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             })
             .then(response => response.json())
-            .then(data => {
-                document.getElementById('problem-title').innerText = `${data.id}. ${data.title}`;
-                document.getElementById('problem-subtitle').innerText = data.subtitle;
-                document.getElementById('problem-description').innerText = data.description;
-                document.getElementById('problem-difficulty').innerText = data.difficulty;
+            .then(resultData => {
+                console.log('Result Data:', resultData);
+                if (resultData.state === 'SUCCESS') {
+                    clearInterval(intervalId);
+                    const formattedResult = formatJSON(resultData.result);
+                    document.getElementById('test-output').innerHTML = `<pre class="formatted-json">${formattedResult}</pre>`;
+                    if (resultData.result.passed && saveResult) {
+                        saveSolution(resultData.result);
+                    }
+                } else if (resultData.state === 'FAILURE' || resultData.state === 'REVOKED') {
+                    clearInterval(intervalId);
+                    document.getElementById('test-output').innerText = 'Error: ' + resultData.result;
+                }
             })
-            .catch(error => console.error('Error fetching problem details:', error));
+            .catch(error => {
+                clearInterval(intervalId);
+                document.getElementById('test-output').innerText = 'Error fetching task status: ' + error.message;
+                console.error('Error fetching task status:', error);
+            });
+        }
 
-            fetch(`http://127.0.0.1:8000/api/main/problem/${problemId}/testcases/`, {
+        function runCode(saveResult) {
+            const code = editor.getValue();
+            const token = localStorage.getItem('accessToken');
+            fetch(`http://localhost:8000/api/interpreter/run-code/${problemId}/`, {
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ code: code })
             })
             .then(response => response.json())
             .then(data => {
-                const tbody = document.getElementById('testcase-table-body');
-                tbody.innerHTML = '';
-                data.forEach(testcase => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${testcase.input_data}</td>
-                        <td>${testcase.expected_output}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                const taskId = data.task_id;
+                console.log('Task ID:', taskId);
+                const intervalId = setInterval(() => {
+                    fetchTaskStatus(taskId, intervalId, saveResult);
+                }, 2000);
             })
-            .catch(error => console.error('Error fetching test cases:', error));
+            .catch(error => {
+                document.getElementById('test-output').innerText = 'Error running code: ' + error.message;
+                console.error('Error running code:', error);
+            });
+        }
 
-            // Initialize Ace Editor
-            const editor = ace.edit("editor");
-            editor.setTheme("ace/theme/monokai");
-            editor.session.setMode("ace/mode/python");
-        });
+        function saveSolution(result) {
+            const token = localStorage.getItem('accessToken');
+            console.log(problemId)
+            fetch('http://localhost:8000/api/interpreter/save-solution/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    problem: problemId,
+                    user: 1, // You may need to get the actual user ID
+                    lead_time: result.lead_time_total_milliseconds,
+                    memory_used: 20.04,
+                    user_code: editor.getValue(),
+                    passed: true
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text(); // Use .text() instead of .json()
+            })
+            .then(saveData => {
+                if (saveData) {
+                    console.log('Save Data:', JSON.parse(saveData));
+                } else {
+                    console.log('Save Data: No content');
+                }
+            })
+            .catch(error => console.error('Error saving solution:', error));
+        }
+
+        document.getElementById('run-code').addEventListener('click', () => runCode(false));
+        document.getElementById('submit-code').addEventListener('click', () => runCode(true));
+
     </script>
 </body>
 </html>
