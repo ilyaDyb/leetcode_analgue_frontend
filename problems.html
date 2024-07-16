@@ -45,19 +45,19 @@
                     <a class="nav-link" href="#">Explore</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Problems</a>
+                    <a class="nav-link" href="problems.html">Problems</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Contest</a>
+                    <a class="nav-link" href="create_problem.html">Create problem</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Discuss</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Interview</a>
+                    <a class="nav-link" href="top_users.html">Top</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Store</a>
+                    <a class="nav-link" href="profile.html">Profile</a>
                 </li>
             </ul>
         </div>
@@ -156,12 +156,12 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            fetch('http://127.0.0.1:8000/api/main/problems/')
+            fetch('http://localhost:8000/api/main/problems/')
                 .then(response => response.json())
                 .then(data => {
                     const tbody = document.getElementById('problem-table-body');
                     tbody.innerHTML = '';
-                    data.forEach(problem => {
+                    data.results.forEach(problem => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td class="clickable" onclick="redirectToProblem(${problem.id})">${problem.id}. ${problem.title}</td>

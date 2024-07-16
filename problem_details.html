@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Problem Details</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         body {
             background-color: #181818;
@@ -66,13 +67,13 @@
             width: 85%;
         }
         .formatted-json {
-        white-space: pre-wrap;
-        background-color: #1e1e1e;
-        color: #dcdcdc;
-        padding: 10px;
-        border-radius: 5px;
-        font-family: monospace;
-        margin-top: 10px;
+            white-space: pre-wrap;
+            background-color: #1e1e1e;
+            color: #dcdcdc;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin-top: 10px;
         }
         .json-bracket {
             color: #a3a3a3;
@@ -85,6 +86,28 @@
         }
         .json-array {
             display: inline;
+        }
+        .rating-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .rating {
+            display: flex;
+            align-items: center;
+        }
+        .rating i {
+            font-size: 24px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .rating span {
+            font-size: 18px;
+            margin-right: 20px;
+        }
+        .disabled {
+            opacity: 0.5;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
@@ -103,19 +126,19 @@
                     <a class="nav-link" href="#">Explore</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Problems</a>
+                    <a class="nav-link" href="problems.html">Problems</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Contest</a>
+                    <a class="nav-link" href="create_problem.html">Create problem</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Discuss</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Interview</a>
+                    <a class="nav-link" href="top_users.html">Top</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Store</a>
+                    <a class="nav-link" href="profile.html">Profile</a>
                 </li>
             </ul>
         </div>
@@ -127,8 +150,18 @@
             <div class="problem-description">
                 <h2 id="problem-title">1. Two Sum</h2>
                 <p><strong>Difficulty:</strong> <span id="problem-difficulty">Easy</span></p>
-                <h3 id="problem-subtitle">string</h3>
-                <p id="problem-description">string</p>
+                <div class="rating-container">
+                    <div class="rating">
+                        <i class="fas fa-thumbs-up" id="like-btn"></i><span id="likes">0</span>
+                        <i class="fas fa-thumbs-down" id="dislike-btn"></i><span id="dislikes">0</span>
+                    </div>
+                    <div>
+                        <strong>Solutions:</strong> <span id="count-solutions">0</span>
+                    </div>
+                </div>
+                <hr>
+                <h3 id="problem-subtitle"></h3>
+                <p id="problem-description"></p>
                 <div id="test-cases">
                     <h5>Test Cases</h5>
                     <div class="table-responsive">
@@ -151,7 +184,7 @@
                     <h5>Code</h5>
                     <div id="editor" style="height: 300px; width: 100%;"></div>
                 </div>
-                <<div class="testcase-container">
+                <div class="testcase-container">
                     <h5>Test Result</h5>
                     <div class="testcase-output">
                         <label>Output:</label>
@@ -171,6 +204,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const problemId = urlParams.get('id');
         const token = localStorage.getItem('accessToken');
+        const userId = 1; // Replace with actual user ID
 
         // Fetch problem details
         fetch(`http://localhost:8000/api/main/problem/${problemId}/`, {
@@ -185,6 +219,9 @@
             document.getElementById('problem-subtitle').innerText = data.subtitle;
             document.getElementById('problem-description').innerText = data.description;
             document.getElementById('problem-difficulty').innerText = data.difficulty;
+            document.getElementById('likes').innerText = data.rates.likes;
+            document.getElementById('dislikes').innerText = data.rates.dislikes;
+            document.getElementById('count-solutions').innerText = data.count_solutions;
         })
         .catch(error => console.error('Error fetching problem details:', error));
 
@@ -216,18 +253,17 @@
         editor.session.setMode("ace/mode/python");
 
         function formatJSON(obj) {
-        const jsonStr = JSON.stringify(obj, null, 2);
-        return jsonStr.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/(\{|\}|\[|\])/g, match => `<span class="json-bracket">${match}</span>`)
-            .replace(/("[^"]*")(\s*:\s*)/g, (match, p1, p2) => `<span class="json-key">${p1}</span>${p2}`)
-            .replace(/:\s*(-?\d+\.?\d*e?[+-]?\d*|-?\d+\.?\d*|true|false|null)/g, match => `: <span class="json-value">${match.slice(2)}</span>`)
-            .replace(/(\[)([^[]*?)(\])/g, (match, p1, p2, p3) => `${p1}<span class="json-array">${p2}</span>${p3}`);
+            const jsonStr = JSON.stringify(obj, null, 2);
+            return jsonStr.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/(\{|\}|\[|\])/g, match => `<span class="json-bracket">${match}</span>`)
+                .replace(/("[^"]*")(\s*:\s*)/g, (match, p1, p2) => `<span class="json-key">${p1}</span>${p2}`)
+                .replace(/:\s*(-?\d+\.?\d*e?[+-]?\d*|-?\d+\.?\d*|true|false|null)/g, match => `: <span class="json-value">${match.slice(2)}</span>`)
+                .replace(/(\[)([^[]*?)(\])/g, (match, p1, p2, p3) => `${p1}<span class="json-array">${p2}</span>${p3}`);
         }
 
         function fetchTaskStatus(taskId, intervalId, saveResult) {
-            const token = localStorage.getItem('accessToken');
             fetch(`http://localhost:8000/api/interpreter/task-status/${taskId}/`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -258,8 +294,30 @@
 
         function runCode(saveResult) {
             const code = editor.getValue();
-            const token = localStorage.getItem('accessToken');
             fetch(`http://localhost:8000/api/interpreter/run-code/${problemId}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const taskId = data.task_id;
+                console.log('Task ID:', taskId);
+                const intervalId = setInterval(() => {
+                    fetchTaskStatus(taskId, intervalId, saveResult);
+                }, 2000);
+            })
+            .catch(error => {
+                document.getElementById('test-output').innerText = 'Error running code: ' + error.message;
+                console.error('Error running code:', error);
+            });
+        }
+        function submitCode(saveResult) {
+            const code = editor.getValue();
+            fetch(`http://localhost:8000/api/interpreter/submit-code/${problemId}/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -282,8 +340,6 @@
         }
 
         function saveSolution(result) {
-            const token = localStorage.getItem('accessToken');
-            console.log(problemId)
             fetch('http://localhost:8000/api/interpreter/save-solution/', {
                 method: 'POST',
                 headers: {
@@ -292,7 +348,7 @@
                 },
                 body: JSON.stringify({
                     problem: problemId,
-                    user: 1, // You may need to get the actual user ID
+                    user: userId, // Replace with actual user ID
                     lead_time: result.lead_time_total_milliseconds,
                     memory_used: 20.04,
                     user_code: editor.getValue(),
@@ -315,8 +371,58 @@
             .catch(error => console.error('Error saving solution:', error));
         }
 
+        function disableButtons() {
+            const likeBtn = document.getElementById('like-btn');
+            const dislikeBtn = document.getElementById('dislike-btn');
+            likeBtn.classList.add('disabled');
+            dislikeBtn.classList.add('disabled');
+            likeBtn.style.pointerEvents = 'none';
+            dislikeBtn.style.pointerEvents = 'none';
+        }
+
+        function likeProblem() {
+            fetch(`http://localhost:8000/api/main/problem/${problemId}/like/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('likes').innerText = parseInt(document.getElementById('likes').innerText) + 1;
+                    disableButtons();
+                } else {
+                    alert('Error liking the problem.');
+                }
+            })
+            .catch(error => console.error('Error liking problem:', error));
+        }
+
+        function dislikeProblem() {
+            fetch(`http://localhost:8000/api/main/problem/${problemId}/dislike/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('dislikes').innerText = parseInt(document.getElementById('dislikes').innerText) + 1;
+                    disableButtons();
+                } else {
+                    alert('Error disliking the problem.');
+                }
+            })
+            .catch(error => console.error('Error disliking problem:', error));
+        }
+
         document.getElementById('run-code').addEventListener('click', () => runCode(false));
-        document.getElementById('submit-code').addEventListener('click', () => runCode(true));
+        document.getElementById('submit-code').addEventListener('click', () => submitCode(true));
+        document.getElementById('like-btn').addEventListener('click', likeProblem);
+        document.getElementById('dislike-btn').addEventListener('click', dislikeProblem);
+
 
     </script>
 </body>
