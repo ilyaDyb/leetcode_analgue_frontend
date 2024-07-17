@@ -88,27 +88,11 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <img src="profile-placeholder.png" alt="Profile Image" class="profile-img">
+        <img src="" alt="Profile Image" class="profile-img">
         <h4 id="username">Username</h4>
         <p id="rank">Rank: </p>
         <button class="btn btn-success btn-block">Edit Profile</button>
         <hr>
-        <div class="stat-item">
-            <span>Views</span>
-            <span id="views">0</span>
-        </div>
-        <div class="stat-item">
-            <span>Solutions</span>
-            <span id="solutions">0</span>
-        </div>
-        <div class="stat-item">
-            <span>Discuss</span>
-            <span id="discuss">0</span>
-        </div>
-        <div class="stat-item">
-            <span>Reputation</span>
-            <span id="reputation">0</span>
-        </div>
         <hr>
         <h5>Languages</h5>
         <div id="languages">
@@ -165,10 +149,6 @@
         .then(data => {
             document.getElementById('username').innerText = data.username;
             document.getElementById('rank').innerText = `Rank: ${data.rank}`;
-            document.getElementById('views').innerText = data.views;
-            document.getElementById('solutions').innerText = data.solutions;
-            document.getElementById('discuss').innerText = data.discuss;
-            document.getElementById('reputation').innerText = data.reputation;
             document.getElementById('was_complited_problems').innerText = data.was_complited_problems;
 
             const solvedProblemsTable = document.getElementById('solved_problems_table');
